@@ -1,0 +1,36 @@
+# Environment files
+.env
+.env.*
+server/.env
+server/.env.*
+
+# Node modules
+node_modules/
+client/node_modules/
+server/node_modules/
+
+# React / Vite
+client/dist/
+client/.vite/
+
+# Backend uploads
+server/uploads/
+
+# Whisper virtual environment
+server/whisper-env/
+
+# Python cache
+__pycache__/
+server/__pycache__/
+*.py[cod]
+
+# Local test audio
+server/Recording.m4a
+*.m4a
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
