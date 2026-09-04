@@ -3982,3 +3982,25 @@ footer small {
     transform: scale(1) translateY(0);
   }
 }
+
+/* ========================================
+   Fix Features & How It Works Headings
+   ======================================== */
+
+.features .section-heading h2,
+.how-it-works .section-heading h2 {
+  color: #111827 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  background: none !important;
+  -webkit-background-clip: initial !important;
+  background-clip: initial !important;
+  -webkit-text-fill-color: #111827 !important;
+}
+
+.features .section-heading h2 span,
+.how-it-works .section-heading h2 span {
+  color: #6366f1 !important;
+  opacity: 1 !important;
+  -webkit-text-fill-color: #6366f1 !important;
+}

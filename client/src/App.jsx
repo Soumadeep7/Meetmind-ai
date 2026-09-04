@@ -128,7 +128,7 @@ function LandingPage() {
 
               <div className="task-info">
                 <strong>Complete Login API</strong>
-                <small>Rahul • Aug 17</small>
+                <small>Development • Aug 17</small>
               </div>
 
               <span className="priority high">
@@ -141,7 +141,7 @@ function LandingPage() {
 
               <div className="task-info">
                 <strong>Design Dashboard</strong>
-                <small>Priya • Aug 19</small>
+                <small>Design  • Aug 19</small>
               </div>
 
               <span className="priority medium">
