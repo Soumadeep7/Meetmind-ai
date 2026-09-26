@@ -195,6 +195,14 @@ function Meetings() {
             ✅ Action Items
           </button>
 
+          <button
+            className="ai-nav-item"
+            onClick={() => navigate("/decisions")}
+          >
+            <span>📌</span>
+            Decisions
+          </button>
+
         </nav>
 
         <button

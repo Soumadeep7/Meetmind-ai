@@ -49,37 +49,26 @@ function Dashboard() {
       setMeetings(userMeetings);
 
       // ==============================
-      // Get action items
+      // Get my action items
       // ==============================
 
-      let allActionItems = [];
-
-      for (const meeting of userMeetings) {
-        try {
-          const actionResponse = await fetch(
-            `http://localhost:5000/api/action-items/meeting/${meeting._id}`,
-            {
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-            }
-          );
-
-          const actionData = await actionResponse.json();
-
-          if (actionResponse.ok) {
-            allActionItems = [
-              ...allActionItems,
-              ...(actionData.actionItems || []),
-            ];
-          }
-        } catch (error) {
-          console.error(
-            `Error fetching action items for meeting ${meeting._id}:`,
-            error
-          );
+      const actionResponse = await fetch(
+        "http://localhost:5000/api/action-items/my",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
+      );
+
+      const actionData = await actionResponse.json();
+
+      if (!actionResponse.ok) {
+        console.error(actionData.message);
+        return;
       }
+
+      setActionItems(actionData.actionItems || []);
 
       setActionItems(allActionItems);
     } catch (error) {
@@ -201,6 +190,13 @@ function Dashboard() {
             ✅ Action Items
           </button>
 
+          <button
+            className="ai-nav-item"
+            onClick={() => navigate("/decisions")}
+          >
+            <span>📌</span>
+            Decisions
+          </button>
         </nav>
 
         <button

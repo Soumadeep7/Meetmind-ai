@@ -11,6 +11,20 @@ const MeetingDetails = () => {
   const [actionItems, setActionItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [decisions, setDecisions] = useState([]);
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [savingChanges, setSavingChanges] = useState(false);
+
+  const [saveMessage, setSaveMessage] = useState("");
+  const [saveError, setSaveError] = useState("");
+  const [reanalyzing, setReanalyzing] = useState(false);
+
+  const [editForm, setEditForm] = useState({
+    title: "",
+    description: "",
+    transcript: "",
+  });
 
   useEffect(() => {
     fetchMeetingDetails();
@@ -61,6 +75,25 @@ const MeetingDetails = () => {
         }
       );
 
+      const decisionResponse = await fetch(
+        `http://localhost:5000/api/decisions/meeting/${id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const decisionData = await decisionResponse.json();
+
+      if (!decisionResponse.ok) {
+        throw new Error(
+          decisionData.message || "Failed to fetch decisions"
+        );
+      }
+
+      setDecisions(decisionData.decisions || []);
+
       const actionData = await actionResponse.json();
 
       if (actionResponse.ok) {
@@ -76,6 +109,192 @@ const MeetingDetails = () => {
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const startEditing = () => {
+    setSaveMessage("");
+    setSaveError("");
+
+    setEditForm({
+      title: meeting.title || "",
+      description: meeting.description || "",
+      transcript: meeting.transcript || "",
+    });
+
+    setIsEditing(true);
+  };
+
+  const cancelEditing = () => {
+    setIsEditing(false);
+
+    setEditForm({
+      title: meeting.title || "",
+      description: meeting.description || "",
+      transcript: meeting.transcript || "",
+    });
+  };
+
+  const handleEditChange = (e) => {
+    const { name, value } = e.target;
+
+    setEditForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const saveChanges = async () => {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
+    setSaveMessage("");
+    setSaveError("");
+
+    if (!editForm.title.trim()) {
+      setSaveError("Meeting title is required.");
+      return;
+    }
+
+    try {
+      setSavingChanges(true);
+
+      const response = await fetch(
+        `http://localhost:5000/api/meetings/${id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            title: editForm.title.trim(),
+            description: editForm.description.trim(),
+            transcript: editForm.transcript,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.message || "Failed to update meeting"
+        );
+      }
+
+      setMeeting(data.meeting);
+
+      setIsEditing(false);
+
+      setSaveMessage("Meeting updated successfully.");
+    } catch (error) {
+      console.error("Update meeting error:", error);
+
+      setSaveError(
+        error.message || "Failed to update meeting"
+      );
+    } finally {
+      setSavingChanges(false);
+    }
+  };
+  const reAnalyzeMeeting = async () => {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
+    if (!meeting.transcript?.trim()) {
+      setSaveError(
+        "A meeting transcript is required before AI analysis."
+      );
+      return;
+    }
+
+    try {
+      setReanalyzing(true);
+      setSaveMessage("");
+      setSaveError("");
+
+      const response = await fetch(
+        `http://localhost:5000/api/ai/meetings/${id}/analyze`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.message || "Failed to analyze meeting"
+        );
+      }
+
+      // Update summary immediately
+      setMeeting((prev) => ({
+        ...prev,
+        summary: data.summary || "",
+      }));
+
+      // Fetch newly generated action items
+      const actionResponse = await fetch(
+        `http://localhost:5000/api/action-items/meeting/${id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const actionData = await actionResponse.json();
+
+      if (actionResponse.ok) {
+        setActionItems(
+          actionData.actionItems ||
+          actionData.data ||
+          []
+        );
+      }
+
+      // Fetch newly generated decisions
+      const decisionResponse = await fetch(
+        `http://localhost:5000/api/decisions/meeting/${id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const decisionData = await decisionResponse.json();
+
+      if (decisionResponse.ok) {
+        setDecisions(
+          decisionData.decisions || []
+        );
+      }
+
+      setSaveMessage(
+        "Meeting re-analyzed successfully. AI summary, action items, and decisions have been updated."
+      );
+    } catch (error) {
+      console.error("Re-analysis error:", error);
+
+      setSaveError(
+        error.message || "Failed to re-analyze meeting"
+      );
+    } finally {
+      setReanalyzing(false);
     }
   };
 
@@ -367,6 +586,12 @@ const MeetingDetails = () => {
               <span>✅</span>
               Action Items
             </button>
+
+            <button
+              onClick={() => navigate("/decisions")}
+            >
+              📌 Decisions
+            </button>
           </nav>
 
           <button
@@ -478,6 +703,15 @@ const MeetingDetails = () => {
             Action Items
           </button>
 
+          <button
+            className="ai-nav-item"
+            onClick={() => navigate("/decisions")}
+          >
+            <span>📌</span>
+            Decisions
+          </button>
+
+
         </nav>
 
         <button
@@ -498,9 +732,9 @@ const MeetingDetails = () => {
       <main className="ai-main meeting-details-main">
 
         {/* HEADER */}
-        <div className="meeting-details-header">
+        <div className="meeting-details-header modern-meeting-header">
 
-          <div>
+          <div className="meeting-details-header-content">
 
             <button
               className="back-button"
@@ -510,42 +744,131 @@ const MeetingDetails = () => {
             </button>
 
             <div className="ai-eyebrow">
-              MEETING DETAILS
+              MEETING
             </div>
 
-            <h1>{meeting.title}</h1>
+            {isEditing ? (
+              <div className="meeting-edit-header-form">
 
-            <p>
-              {meeting.description ||
-                "No description provided for this meeting."}
-            </p>
+                <input
+                  type="text"
+                  name="title"
+                  value={editForm.title}
+                  onChange={handleEditChange}
+                  className="meeting-edit-title-input"
+                  placeholder="Meeting title"
+                />
+
+                <textarea
+                  name="description"
+                  value={editForm.description}
+                  onChange={handleEditChange}
+                  className="meeting-edit-description-input"
+                  placeholder="Meeting description"
+                  rows="3"
+                />
+
+              </div>
+            ) : (
+              <>
+                <h1>{meeting.title}</h1>
+
+                <p>
+                  {meeting.description ||
+                    "No description provided for this meeting."}
+                </p>
+
+                <div className="meeting-meta-row">
+
+                  <span>
+                    📅 {formatDate(meeting.createdAt)}
+                  </span>
+
+                  <span>
+                    👥 {meeting.participants?.length || 0} participants
+                  </span>
+
+                  <span className="meeting-ai-status">
+                    🤖 {meeting.summary ? "AI analyzed" : "Not analyzed"}
+                  </span>
+
+                </div>
+              </>
+            )}
 
           </div>
 
           <div className="meeting-details-actions">
 
-            <button
-              className="export-pdf-btn"
-              onClick={exportMeetingPDF}
-            >
-              📄 Export PDF
-            </button>
+            {isEditing ? (
+              <>
+                <button
+                  className="edit-cancel-btn"
+                  onClick={cancelEditing}
+                  disabled={savingChanges}
+                >
+                  Cancel
+                </button>
 
-            <div className="meeting-date-card">
-              <span>MEETING</span>
+                <button
+                  className="edit-save-btn"
+                  onClick={saveChanges}
+                  disabled={savingChanges}
+                >
+                  {savingChanges
+                    ? "Saving..."
+                    : "💾 Save Changes"}
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  className="edit-meeting-btn"
+                  onClick={startEditing}
+                >
+                  ✏️ Edit Meeting
+                </button>
 
-              <strong>
-                {formatDate(meeting.createdAt)}
-              </strong>
-            </div>
+                <button
+                  className="reanalyze-meeting-btn"
+                  onClick={reAnalyzeMeeting}
+                  disabled={
+                    reanalyzing ||
+                    !meeting.transcript?.trim()
+                  }
+                >
+                  {reanalyzing
+                    ? "🔄 Analyzing..."
+                    : "🔄 Re-analyze"}
+                </button>
+
+                <button
+                  className="export-pdf-btn"
+                  onClick={exportMeetingPDF}
+                >
+                  📄 Export PDF
+                </button>
+              </>
+            )}
 
           </div>
 
         </div>
 
+        {saveMessage && (
+          <div className="meeting-save-message success">
+            ✓ {saveMessage}
+          </div>
+        )}
+
+        {saveError && (
+          <div className="meeting-save-message error">
+            ⚠ {saveError}
+          </div>
+        )}
 
         {/* SUMMARY */}
-        <section className="details-card">
+        <section className="details-card modern-summary-card">
 
           <div className="details-card-header">
 
@@ -563,7 +886,6 @@ const MeetingDetails = () => {
           </div>
 
           <div className="summary-content">
-
             {meeting.summary ? (
               <p>{meeting.summary}</p>
             ) : (
@@ -579,10 +901,77 @@ const MeetingDetails = () => {
                 </div>
               </div>
             )}
-
           </div>
 
         </section>
+
+        <div className="meeting-details-section">
+
+          <div className="meeting-details-section-header">
+
+            <div>
+              <span className="meeting-details-section-label">
+                DECISION TRACKING
+              </span>
+
+              <h2>Key Decisions</h2>
+            </div>
+
+            <span className="decision-count">
+              {decisions.length}
+            </span>
+
+          </div>
+
+          {decisions.length === 0 ? (
+
+            <div className="decision-empty-state">
+              <div className="decision-empty-icon">
+                📌
+              </div>
+
+              <h3>No decisions recorded</h3>
+
+              <p>
+                Important decisions from this meeting will appear here
+                after AI analysis.
+              </p>
+            </div>
+
+          ) : (
+
+            <div className="decisions-list">
+
+              {decisions.map((item, index) => (
+
+                <div
+                  className="decision-card"
+                  key={item._id}
+                >
+
+                  <div className="decision-number">
+                    {index + 1}
+                  </div>
+
+                  <div className="decision-content">
+
+                    <span>DECISION</span>
+
+                    <p>
+                      {item.decision}
+                    </p>
+
+                  </div>
+
+                </div>
+
+              ))}
+
+            </div>
+
+          )}
+
+        </div>
 
 
         {/* ACTION ITEMS */}
@@ -690,7 +1079,26 @@ const MeetingDetails = () => {
           </div>
 
 
-          {meeting.transcript ? (
+          {isEditing ? (
+
+            <div className="meeting-edit-transcript">
+
+              <textarea
+                name="transcript"
+                value={editForm.transcript}
+                onChange={handleEditChange}
+                className="meeting-transcript-editor"
+                placeholder="Enter or edit the meeting transcript..."
+                rows="12"
+              />
+
+              <p className="meeting-edit-hint">
+                You can edit the transcript before re-analyzing the meeting.
+              </p>
+
+            </div>
+
+          ) : meeting.transcript ? (
 
             <div className="details-transcript">
               {meeting.transcript}
@@ -700,7 +1108,9 @@ const MeetingDetails = () => {
 
             <div className="details-empty">
               <div>📝</div>
+
               <h3>No transcript available</h3>
+
               <p>
                 Upload or record meeting audio to generate
                 a transcript.
@@ -708,7 +1118,6 @@ const MeetingDetails = () => {
             </div>
 
           )}
-
         </section>
 
       </main>

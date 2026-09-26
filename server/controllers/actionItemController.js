@@ -1,5 +1,6 @@
 const ActionItem = require("../models/ActionItem");
 const Meeting = require("../models/Meeting");
+const { analyzeMeeting } = require("./aiController");
 
 const createActionItem = async (req, res) => {
   try {
@@ -100,7 +101,7 @@ const getActionItemsByMeeting = async (req, res) => {
 const getMyActionItems = async (req, res) => {
   try {
     const actionItems = await ActionItem.find({
-      assigneeUser: req.user.userId,
+      user: req.user.userId,
     })
       .populate("meeting", "title description")
       .populate("assigneeUser", "name email")

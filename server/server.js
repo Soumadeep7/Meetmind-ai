@@ -17,6 +17,7 @@ const actionItemRoutes = require("./routes/actionItemRoutes");
 const aiRoutes = require("./routes/aiRoutes");
 const transcriptionRoutes = require("./routes/transcriptionRoutes");
 const userRoutes = require("./routes/userRoutes");
+const decisionRoutes = require("./routes/decisionRoutes");
 
 const app = express();
 
@@ -53,6 +54,7 @@ app.use("/api/action-items", actionItemRoutes);
 app.use("/api/ai", aiRoutes);
 app.use("/api/transcription", transcriptionRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/decisions", decisionRoutes);
 
 // ==============================
 // Health Routes

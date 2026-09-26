@@ -7,6 +7,7 @@ import CreateMeeting from "./pages/CreateMeeting";
 import Meetings from "./pages/Meetings";
 import ActionItems from "./pages/ActionItems";
 import MeetingDetails from "./pages/MeetingDetails";
+import Decisions from "./pages/Decisions";
 
 function App() {
   return (
@@ -26,8 +27,10 @@ function App() {
       <Route path="/meetings" element={<Meetings />} />
 
       <Route path="/action-items" element={<ActionItems />} />
-      
+
       <Route path="/meetings/:id" element={<MeetingDetails />} />
+
+      <Route path="/decisions" element={<Decisions />} />
     </Routes>
   );
 }
@@ -77,7 +80,7 @@ function LandingPage() {
 
           <div className="hero-buttons">
             <Link to="/meetings/new" className="primary-btn">
-                Upload Meeting
+              Upload Meeting
             </Link>
 
             <button className="secondary-btn">

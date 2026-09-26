@@ -3,12 +3,18 @@ const path = require("path");
 const fs = require("fs");
 
 const Meeting = require("../models/Meeting");
+const {
+  processMeetingWithAI,
+} = require("./aiController");
 
 const transcribeMeeting = async (req, res) => {
   try {
     const { id } = req.params;
 
+    // ==========================================
     // Check audio file
+    // ==========================================
+
     if (!req.file) {
       return res.status(400).json({
         success: false,
@@ -16,14 +22,19 @@ const transcribeMeeting = async (req, res) => {
       });
     }
 
+    // ==========================================
     // Find meeting
+    // ==========================================
+
     const meeting = await Meeting.findOne({
       _id: id,
       user: req.user.userId,
     });
 
     if (!meeting) {
-      fs.unlinkSync(req.file.path);
+      if (fs.existsSync(req.file.path)) {
+        fs.unlinkSync(req.file.path);
+      }
 
       return res.status(404).json({
         success: false,
@@ -31,7 +42,10 @@ const transcribeMeeting = async (req, res) => {
       });
     }
 
-    // Python executable inside Whisper virtual environment
+    // ==========================================
+    // Python executable
+    // ==========================================
+
     const pythonPath = path.join(
       __dirname,
       "..",
@@ -40,14 +54,23 @@ const transcribeMeeting = async (req, res) => {
       "python.exe"
     );
 
-    // Python transcription script
+    // ==========================================
+    // Whisper script
+    // ==========================================
+
     const scriptPath = path.join(
       __dirname,
       "..",
       "transcribe.py"
     );
 
-    console.log("Starting Whisper transcription...");
+    console.log(
+      "Starting Whisper transcription..."
+    );
+
+    // ==========================================
+    // Start Python
+    // ==========================================
 
     const pythonProcess = spawn(
       pythonPath,
@@ -60,67 +83,188 @@ const transcribeMeeting = async (req, res) => {
     let output = "";
     let errorOutput = "";
 
-    pythonProcess.stdout.on("data", (data) => {
-      output += data.toString();
-    });
-
-    pythonProcess.stderr.on("data", (data) => {
-      errorOutput += data.toString();
-      console.log("Whisper:", data.toString());
-    });
-
-    pythonProcess.on("close", async (code) => {
-      try {
-        // Delete uploaded audio after transcription
-        if (fs.existsSync(req.file.path)) {
-          fs.unlinkSync(req.file.path);
-        }
-
-        if (code !== 0) {
-          console.error("Whisper error:", errorOutput);
-
-          return res.status(500).json({
-            success: false,
-            message: "Transcription failed",
-            error: errorOutput,
-          });
-        }
-
-        const result = JSON.parse(output);
-
-        if (!result.success) {
-          return res.status(500).json({
-            success: false,
-            message: "Transcription failed",
-            error: result.error,
-          });
-        }
-
-        // Save transcript in MongoDB
-        meeting.transcript = result.transcript.trim();
-
-        await meeting.save();
-
-        return res.status(200).json({
-          success: true,
-          message: "Audio transcribed successfully",
-          transcript: meeting.transcript,
-          language: result.language,
-        });
-      } catch (error) {
-        console.error("Transcription processing error:", error);
-
-        return res.status(500).json({
-          success: false,
-          message: "Failed to process transcription",
-          error: error.message,
-        });
+    pythonProcess.stdout.on(
+      "data",
+      (data) => {
+        output += data.toString();
       }
-    });
-  } catch (error) {
-    console.error("Transcription controller error:", error);
+    );
 
-    if (req.file && fs.existsSync(req.file.path)) {
+    pythonProcess.stderr.on(
+      "data",
+      (data) => {
+        errorOutput += data.toString();
+
+        console.log(
+          "Whisper:",
+          data.toString()
+        );
+      }
+    );
+
+    // ==========================================
+    // Whisper finished
+    // ==========================================
+
+    pythonProcess.on(
+      "close",
+      async (code) => {
+        try {
+          // ======================================
+          // Delete uploaded audio
+          // ======================================
+
+          if (
+            fs.existsSync(req.file.path)
+          ) {
+            fs.unlinkSync(
+              req.file.path
+            );
+          }
+
+          // ======================================
+          // Whisper failed
+          // ======================================
+
+          if (code !== 0) {
+            console.error(
+              "Whisper error:",
+              errorOutput
+            );
+
+            return res.status(500).json({
+              success: false,
+              message:
+                "Transcription failed",
+              error:
+                errorOutput,
+            });
+          }
+
+          // ======================================
+          // Parse Whisper response
+          // ======================================
+
+          let result;
+
+          try {
+            result = JSON.parse(
+              output
+            );
+          } catch (parseError) {
+            console.error(
+              "Whisper JSON parse error:",
+              parseError
+            );
+
+            console.error(
+              "Whisper output:",
+              output
+            );
+
+            return res.status(500).json({
+              success: false,
+              message:
+                "Invalid transcription response",
+            });
+          }
+
+          // ======================================
+          // Transcription failed
+          // ======================================
+
+          if (!result.success) {
+            return res.status(500).json({
+              success: false,
+              message:
+                "Transcription failed",
+              error:
+                result.error,
+            });
+          }
+
+          // ======================================
+          // Save transcript
+          // ======================================
+
+          meeting.transcript =
+            result.transcript.trim();
+
+          await meeting.save();
+
+          console.log(
+            "Transcript saved successfully."
+          );
+
+          // ======================================
+          // AUTOMATIC AI ANALYSIS
+          // ======================================
+
+          console.log(
+            "Starting automatic AI analysis..."
+          );
+
+          const aiResult =
+            await processMeetingWithAI(
+              meeting._id,
+              req.user.userId
+            );
+
+          console.log(
+            "Automatic AI analysis completed."
+          );
+
+          // ======================================
+          // Return everything
+          // ======================================
+
+          return res.status(200).json({
+            success: true,
+
+            message:
+              "Audio processed successfully",
+
+            transcript:
+              meeting.transcript,
+
+            language:
+              result.language,
+
+            summary:
+              aiResult.summary,
+
+            decisions:
+              aiResult.decisions,
+
+            actionItems:
+              aiResult.actionItems,
+          });
+        } catch (error) {
+          console.error(
+            "Transcription processing error:",
+            error
+          );
+
+          return res.status(500).json({
+            success: false,
+            message:
+              "Failed to process transcription",
+            error:
+              error.message,
+          });
+        }
+      }
+    );
+  } catch (error) {
+    console.error(
+      "Transcription controller error:",
+      error
+    );
+
+    if (
+      req.file &&
+      fs.existsSync(req.file.path)
+    ) {
       fs.unlinkSync(req.file.path);
     }
 
