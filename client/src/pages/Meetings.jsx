@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../App.css";
+import API_URL from "../api";
 
 function Meetings() {
   const navigate = useNavigate();
@@ -32,7 +33,7 @@ function Meetings() {
   const fetchMeetings = async () => {
     try {
       const response = await fetch(
-        "http://localhost:5000/api/meetings",
+        `${API_URL}/api/meetings`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -77,7 +78,7 @@ function Meetings() {
 
     try {
       const response = await fetch(
-        `http://localhost:5000/api/meetings/${meetingId}`,
+        `${API_URL}/api/meetings/${meetingId}`,
         {
           method: "DELETE",
           headers: {

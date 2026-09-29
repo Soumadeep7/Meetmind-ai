@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { jsPDF } from "jspdf";
 import "../App.css";
+import API_URL from "../api";
 
 const MeetingDetails = () => {
   const { id } = useParams();
@@ -44,7 +45,7 @@ const MeetingDetails = () => {
 
       // Get meeting
       const meetingResponse = await fetch(
-        `http://localhost:5000/api/meetings/${id}`,
+        `${API_URL}/api/meetings/${id}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -67,7 +68,7 @@ const MeetingDetails = () => {
 
       // Get action items
       const actionResponse = await fetch(
-        `http://localhost:5000/api/action-items/meeting/${id}`,
+        `${API_URL}/api/action-items/meeting/${id}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -76,7 +77,7 @@ const MeetingDetails = () => {
       );
 
       const decisionResponse = await fetch(
-        `http://localhost:5000/api/decisions/meeting/${id}`,
+        `${API_URL}/api/decisions/meeting/${id}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -164,7 +165,7 @@ const MeetingDetails = () => {
       setSavingChanges(true);
 
       const response = await fetch(
-        `http://localhost:5000/api/meetings/${id}`,
+        `${API_URL}/api/meetings/${id}`,
         {
           method: "PUT",
           headers: {
@@ -223,7 +224,7 @@ const MeetingDetails = () => {
       setSaveError("");
 
       const response = await fetch(
-        `http://localhost:5000/api/ai/meetings/${id}/analyze`,
+        `${API_URL}/api/ai/meetings/${id}/analyze`,
         {
           method: "POST",
           headers: {
@@ -248,7 +249,7 @@ const MeetingDetails = () => {
 
       // Fetch newly generated action items
       const actionResponse = await fetch(
-        `http://localhost:5000/api/action-items/meeting/${id}`,
+        `${API_URL}/api/action-items/meeting/${id}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -268,7 +269,7 @@ const MeetingDetails = () => {
 
       // Fetch newly generated decisions
       const decisionResponse = await fetch(
-        `http://localhost:5000/api/decisions/meeting/${id}`,
+        `${API_URL}/api/decisions/meeting/${id}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

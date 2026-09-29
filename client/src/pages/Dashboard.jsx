@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../App.css";
+import API_URL from "../api";
 
 function Dashboard() {
   const navigate = useNavigate();
@@ -29,7 +30,7 @@ function Dashboard() {
       // ==============================
 
       const meetingsResponse = await fetch(
-        "http://localhost:5000/api/meetings",
+        `${API_URL}/api/meetings`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -53,7 +54,7 @@ function Dashboard() {
       // ==============================
 
       const actionResponse = await fetch(
-        "http://localhost:5000/api/action-items/my",
+        `${API_URL}/api/action-items/my`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

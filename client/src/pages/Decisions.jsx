@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../App.css";
+import API_URL from "../api";
 
 function Decisions() {
   const navigate = useNavigate();
@@ -29,7 +30,7 @@ function Decisions() {
       setLoading(true);
 
       const response = await fetch(
-        "http://localhost:5000/api/decisions/my",
+        `${API_URL}/api/decisions/my`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

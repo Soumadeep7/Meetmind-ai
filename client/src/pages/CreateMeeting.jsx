@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "../App.css";
+import API_URL from "../api";
 
 const CreateMeeting = () => {
   const navigate = useNavigate();
@@ -127,7 +128,7 @@ const CreateMeeting = () => {
       setLoadingUsers(true);
 
       const response = await fetch(
-        `http://localhost:5000/api/users/search?search=${encodeURIComponent(
+        `${API_URL}/api/users/search?search=${encodeURIComponent(
           search
         )}`,
         {
@@ -181,7 +182,7 @@ const CreateMeeting = () => {
       }
 
       const response = await fetch(
-        "http://localhost:5000/api/meetings",
+        `${API_URL}/api/meetings`,
         {
           method: "POST",
           headers: {
@@ -239,7 +240,7 @@ const CreateMeeting = () => {
       formData.append("audio", audioFile);
 
       const response = await fetch(
-        `http://localhost:5000/api/transcription/meetings/${meetingId}/transcribe`,
+        `${API_URL}/api/transcription/meetings/${meetingId}/transcribe`,
         {
           method: "POST",
           headers: {
@@ -297,7 +298,7 @@ const CreateMeeting = () => {
       // STEP 1: Save transcript to the meeting
       // ==========================================
       const updateResponse = await fetch(
-        `http://localhost:5000/api/meetings/${meetingId}`,
+        `${API_URL}/api/meetings/${meetingId}`,
         {
           method: "PUT",
           headers: {
@@ -324,7 +325,7 @@ const CreateMeeting = () => {
       setMessage("Transcript saved. Analyzing meeting with AI...");
 
       const response = await fetch(
-        `http://localhost:5000/api/ai/meetings/${meetingId}/analyze`,
+        `${API_URL}/api/ai/meetings/${meetingId}/analyze`,
         {
           method: "POST",
           headers: {

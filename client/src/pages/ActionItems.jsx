@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../App.css";
+import API_URL from "../api";
+
 
 function ActionItems() {
   const navigate = useNavigate();
@@ -21,7 +23,7 @@ function ActionItems() {
       setLoading(true);
 
       const response = await fetch(
-        "http://localhost:5000/api/action-items/my",
+        `${API_URL}/api/action-items/my`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -56,7 +58,7 @@ function ActionItems() {
 
     try {
       const response = await fetch(
-        `http://localhost:5000/api/action-items/${id}`,
+       `${API_URL}/api/action-items/${id}`,
         {
           method: "PUT",
           headers: {
@@ -102,7 +104,7 @@ function ActionItems() {
 
     try {
       const response = await fetch(
-        `http://localhost:5000/api/action-items/${id}`,
+        `${API_URL}/api/action-items/${id}`,
         {
           method: "DELETE",
           headers: {
